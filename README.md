@@ -15,3 +15,11 @@ To allow them to run:
 xattr -d com.apple.quarantine ./bin/chromedriver/chromedriver-mac-arm64/chromedriver
 xattr -d -r com.apple.quarantine "./bin/chrome/chrome-mac-arm64/Google Chrome for Testing.app"
 ```
+
+
+## Create a virtual environment and run
+
+```bash
+python3 -m venv dino-env
+source venv/bin/activate
+```
