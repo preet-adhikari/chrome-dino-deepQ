@@ -1,0 +1,4 @@
+/bin/chrome
+/bin/chromedriver
+
+*.zip
