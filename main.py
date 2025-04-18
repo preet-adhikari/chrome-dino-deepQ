@@ -7,8 +7,12 @@ from selenium import webdriver
 from selenium.common.exceptions import WebDriverException
 
 # Chrome and Chromedriver paths
-chrome_path = "./bin/chrome/chrome-mac-arm64/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing"
-driver_path = "./bin/chromedriver/chromedriver-mac-arm64/chromedriver"
+# chrome_path = "./bin/chrome/chrome-mac-arm64/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing"
+# driver_path = "./bin/chromedriver/chromedriver-mac-arm64/chromedriver"
+
+# For Windows, you can use the following paths:
+chrome_path = r"C:\tools\chrome-win64\chrome-win64\chrome.exe"
+driver_path = r"C:\tools\chromedriver-win64\chromedriver-win64\chromedriver.exe"
 
 def check_or_fail():
 
