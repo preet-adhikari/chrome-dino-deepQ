@@ -3,3 +3,4 @@
 /dino-env
 
 *.zip
+/__pycache__
