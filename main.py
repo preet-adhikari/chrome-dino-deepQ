@@ -96,11 +96,11 @@ for episode in range(EPISODES):
         state = stacker.get_stacked_state()
 
         # 4. Choose action (right now: random or always jump)
-        # You can define: 0 = do nothing, 1 = jump
+        # TODO : define: 0 = do nothing, 1 = jump
         action = random.choice([0, 1])
 
-        # 5. Perform action using Selenium key events
-        send_keypress(action)  # you'll implement this
+        # TODO : Perform action using Selenium key events
+        send_keypress(action)  # TODO : implement this
 
         # 6. Wait a bit, take next frame
         time.sleep(0.1)  # or faster/slower based on game
@@ -110,9 +110,9 @@ for episode in range(EPISODES):
         next_frame = np.array(image).astype(np.float32) / 255.0
         stacker.append(next_frame)
 
-        # 7. Check for collision (using pixel check or JS)
-        done = check_game_over()  # implement this
-        score += 1  # or use actual reward signal later
+        # Check for collision 
+        done = check_game_over()  # TODO : implement this
+        score += 1  # TODO : or use actual reward signal later
 
 
 
