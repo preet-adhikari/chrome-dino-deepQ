@@ -87,3 +87,34 @@ We'll be using python's package deque.
 
 We'll create a class FrameStacker that takes in frames and adds frame to the queue. 
 
+The FrameStacker class takes in the frames, and generates a 84x84x4 shape output for the neural network. 
+
+Then we implement a function for the dino to take action. We use selenium to grab the body element and use its send_keys function to set 1 as jump(arrow up) key and 0 as duck(down key).
+
+When the dino game starts, Chrome initiates a global Javascript object called Runner.instance_
+
+When the dino crashes, this global variable's property is set to Runner.instance_.crashed = true. We can check that to check whether the game is over or not. 
+
+So we can use selenium to execute a javascript script and check if the game is over inside the episode. 
+
+As of right now, these are the steps we have:
+
+We define the browser width, load the browser. We set the number of episodes. Then for each episode, we load the browser and dino game, and get the frame from the current input. The frame is multiplied four times for the first time and is stacked on top of each other. Then once the actions are taken, the frames are generated. After generating each frame they can be stacked on top of each other. 
+
+Once the action is taken, new frames are added until the dino doesn't die. We count how many steps until the dino runs. This was the result of the first run: 
+
+```                                                                
+✅ Chrome and Chromedriver found. Environment ready.
+Starting episode: 1: 
+⚠️  Expected error: Dino game loaded offline.
+Episode ended after 30 steps.
+Press Enter to close the browser...
+```
+
+
+
+
+
+
+
+
