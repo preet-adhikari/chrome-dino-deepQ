@@ -1,10 +1,12 @@
 # Imports
 import sys
 import os
+import io
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.chrome.service import Service
 from selenium import webdriver
 from selenium.common.exceptions import WebDriverException
+from PIL import Image
 
 # Chrome and Chromedriver paths
 chrome_path = "./bin/chrome/chrome-mac-arm64/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing"
@@ -49,6 +51,9 @@ except WebDriverException as e:
         print("⚠️  Expected error: Dino game loaded offline.")
     else:
         raise 
+screenshot = driver.get_screenshot_as_png()
+image = Image.open(io.BytesIO(screenshot))
+print(image)
 input("Press Enter to close the browser...")
 
 driver.quit()
