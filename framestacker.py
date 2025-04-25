@@ -3,16 +3,15 @@ from collections import deque
 
 
 class FrameStacker:
-    def __init__(self, stack_size=4, frame_shape=(84, 84)):
+    def __init__(self, stack_size=3, frame_shape=(75, 75)):
         self.stack_size = stack_size
         self.frame_shape = frame_shape
         self.frames = deque(maxlen=stack_size)
 
     def reset(self, initial_frame):
         # Fill the deque with initial_frame repeated
-        for _ in range(self.stack_size):
-            self.frames.append(initial_frame)
-        pass
+        self.frames = deque(
+            [initial_frame] * self.stack_size, maxlen=self.stack_size)
 
     def append(self, frame):
         # Add a new frame to the deque
@@ -20,6 +19,6 @@ class FrameStacker:
         pass
 
     def get_stacked_state(self):
-        # Stack frames along the last axis → shape: (84, 84, 4)
-        np.stack(self.frames, axis=-1)
+        # Stack frames along the last axis → shape: (75, 75, 3)
+        return np.stack(self.frames, axis=-1)
         pass

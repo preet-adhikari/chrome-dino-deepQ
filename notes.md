@@ -111,7 +111,75 @@ Episode ended after 30 steps.
 Press Enter to close the browser...
 ```
 
+Next, let's build the reward system for training the DQN.
 
+This is the reinforcement part of learning. We will implement a system where survival will be the reward. So for each step the dino survives, reward will be added by 1. If it dies however, it will be subtracted by 100. 
+
+Surviving encourages the agent to stay alive longer where dying and getting reward cut off like that, will make the agent not take bad actions. 
+
+For the DeepQ learning, we're going to use the replay buffer. 
+
+This Replay buffer stores in the replays so that it uses the DeepQ learning paradigm. After getting the steps from the replay, we store the experience in a buffer which is a queue. In this buffer, we initialize a queue, and then we store state, action, reward, next_state and done variables. Then, from this replay buffer, we can generate a random sample which can be used by the network to extract previous knowledge so that it can learn and develop faster. 
+
+We initialize the replay buffer before we start the episodes because we want the buffer to persist across all the episodes.
+
+Now we have stored the experience. Once we store all the experiences, we need to check if all the experiences stored exceed a certain batch size. 
+
+While creating the replay buffer, we initialize a cpacity for the buffer. This is the buffer memory, which specifies how many steps of the game does the buffer store. Then we have the batch size, which will be dividing that memory into batches and then train the model on those batches. 
+
+We'll set a random buffer size of 10,000.
+
+Then, when the replay_buffer is greater than the batch size, it means the model can train on that data. So, in that case, we will unzip the data into the states, actions, rewards and next_states plus dones that can be taken and put into the Deep Q learning network. 
+
+
+Tricky part. First we were only considering to implement jump and do nothing for each step. Now, we will be adding 'duck' functionality as well. We will be implementing '2' as the action for duck. But for duck action, it can get a little complicated because we have to hold down the duck button. For that, we used selenium actions.
+
+Now, finally we are ready to create the neural network to train this data. We will be using a CNN layer, a Flatten layer and a Dense layer to generate the outputs of the Q network. We need to feed the target to this Q network which will then output a number of actions to take. 
+
+And for Q network, we need to use gradient tape because we're calculating the loss manually and hence tensorflow needs a way to compute the gradients. Hence, we use GradientTape() because through that, the model can calculate and use the gradients properly. The gradient tape tracks all the gradients in the Q network and you can formulate it to teach the network properly.
+
+We use huber loss instead of mean squared error because huber loss smooths out large errors and focuses on making, smaller, stable improvements.
+
+We used the simple function of crop and resize to get the frame, but since the model wasn't doing well, extracting the image properly is the next step first. 
+
+We'll be using the javascript canvas to get the area and then use screenshot to get the image. 
+
+Canvas details directly retrieves the position and size of game canvas. 
+
+'''
+{'bottom': 185, 'height': 150, 'left': 124, 'right': 676, 'toJSON': {}, 'top': 35, 'width': 552, 'x': 124, 'y': 35}
+'''
+
+Actual width of the canvas in canvas pixels, which is 1104. This can help to maintain aspect ratio or consistency in resolution. We're taking dino width when it comes to ducking so that detection can be done better.
+
+We're using skimage, which is the scikit image for image processing. It has many features. 
+
+A better idea would be to look at the screen ahead of the dino, rather than what's behind, hence we used the dino width for ducking because that is the most of what we can get of the screen. 
+
+This time, we'll be setting a size of 75x75 since that seems better to work with. 
+
+This model needed tweaking: 
+
+''' 
+def build_q_network(input_shape=(84, 84, 4), num_actions=2):
+    model = models.Sequential([
+        layers.Conv2D(32, kernel_size=8, strides=4,
+                      activation='relu', input_shape=input_shape, padding='same'),
+        layers.MaxPooling2D(pool_size=(2, 2)),
+        layers.Conv2D(64, kernel_size=4, strides=2,
+                      activation='relu', padding='same'),
+        layers.MaxPooling2D(pool_size=(2, 2)),
+        layers.Conv2D(64, kernel_size=3, strides=1,
+                      activation='relu', padding='same'),
+        layers.MaxPooling2D(pool_size=(2,2)),
+        layers.Flatten(),
+        layers.Dense(512, activation='relu'),
+        layers.Dense(num_actions)  # no activation (raw Q-values)
+    ])
+    return model
+'''
+
+We went with this one: 
 
 
 
