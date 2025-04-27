@@ -1,11 +1,13 @@
 import tensorflow as tf
 from tensorflow.keras import layers, models
 import numpy as np
+import sys
 
 def build_q_network(input_shape=(75, 75, 3)):
     model = models.Sequential([
+        tf.keras.Input(shape=input_shape),
         layers.Conv2D(32, (3, 3),
-                      activation='relu', input_shape=input_shape, padding='same'),
+                      activation='relu', padding='same'),
         layers.MaxPooling2D(pool_size=(2, 2)),
         layers.Conv2D(64, (3, 3), strides=2,
                       activation='relu', padding='same'),
@@ -15,17 +17,17 @@ def build_q_network(input_shape=(75, 75, 3)):
         layers.MaxPooling2D(pool_size=(2,2)),
         layers.Flatten(),
         layers.Dense(512, activation='relu'),
-        layers.Dense(3, activation='softmax')  
+        # Not having activation function because I want to output real Q values.
+        
+        layers.Dense(3, activation=None)  
     ])
 
     # Compile and return model
-    model.compile(optimizer='adam', loss="mse", metrics=["accuracy"])
     return model
 
 
 def train_step(model, target_model, batch, optimizer, gamma=0.99):
-    states, actions, rewards, next_states, dones = zip(*batch)
-
+    states, actions, rewards, next_states, dones = zip(*batch)  
     # Convert to NumPy arrays
     states = np.array(states)
     actions = np.array(actions)

@@ -180,9 +180,71 @@ def build_q_network(input_shape=(84, 84, 4), num_actions=2):
 '''
 
 We went with this one: 
+'''
+ model = models.Sequential([
+        tf.keras.Input(shape=input_shape),
+        layers.Conv2D(32, (3, 3),
+                      activation='relu', padding='same'),
+        layers.MaxPooling2D(pool_size=(2, 2)),
+        layers.Conv2D(64, (3, 3), strides=2,
+                      activation='relu', padding='same'),
+        layers.MaxPooling2D(pool_size=(2, 2)),
+        layers.Conv2D(64, (3, 3), strides=1,
+                      activation='relu', padding='same'),
+        layers.MaxPooling2D(pool_size=(2,2)),
+        layers.Flatten(),
+        layers.Dense(512, activation='relu'),
+        layers.Dense(3, activation='softmax')  
+    ])
+
+    # Compile and return model
+    model.compile(optimizer='adam', loss="mse", metrics=["accuracy"])
+'''
+
+We encountered an error while training the model. The size that was being generated from training added another dimension.
+Something like:
+'''
+State 1 shape: (1, 75, 75, 3)
+State 2 shape: (1, 75, 75, 3)
+State 3 shape: (1, 75, 75, 3)
+'''
+
+The issue could be in the replay buffer.
+
+The issue was that the replay buffer was storing an extra dimension while storing the state. The extra dimension was originally added as a batch size so when the state is passed into the model.predict function, the extra dimension is the batch size. 
+
+But the replay buffer only needs frames of the same shape and when it unzips to train, it throws an error of a mismatching shape. 
+
+Fixing the shape issue was easy, as I didn't store the expanded dimensions of the frame into the replay buffer. 
+
+After that, it started running smoothly. The model is still not learning however. 
+
+I have decided to go with parallel processing, with a distributed experience collection in mind. What that is is I will be loading 4 different browser windows on one global frame buffer to traing one agent. This way, I have 4 workers for one model which means training and testing will be much much faster. 
+
+There is a complication, however. Its where multiprocessing doesn't allow variables like list to be shared across processes. This can be an issue because we're storing variables into a single buffer. 
+
+In multiprocessing in Python, when you create a new process, it forks(copies), the parent process into a new seperate memory space, and then each process becomes independent and each process has its own copy of variables.
+
+Hence a separate queue or list is necessary to share the variables between processes because we'll be storing frames and we need to share the frames between each other. 
+
+Where in multithreading you share memory, in multiprocessing, it is not the case. Hence, we use queue to share the variables between processes. Using that, we can then share the replay buffer, which is the frames across the 4 different browsers we use. 
+
+Now, the training of the model only happens in the main process. This way, it is much much easier. 
+
+There was an issue while using multiprocessing. The epsilon value was not being tracked well in the implementation. What I mean is I got stuck trying to figure out the best way to track the epsilon value because I needed to implement a global epsilon value due to the limitations of multiprocessing. If I use a local variable, it shrinks too much, the 4 workers are kind of working on their own. I tried adding it to the training set but I couldn't find the perfect balance of ending an episode and then training the model. It seemed like it would take a little more time than I thought finding the perfect balance and it is an optimization step, because my first issue is that our model isn't learning at all. And figuring out a simple epsilon method would be much much easier to implement. 
+
+Hence, I am going back to the single process run. I have kept the code of multiprocessing in this repo and it will be something I can come back later and try to figure out. 
 
 
+For now, back to the model. I have also have a hunch that using softmax as my activation function is not the right way to go because this isn't a classification problem, this is a reward maximization problem. 
 
+Hence, I am removing softmax. 
+
+Training with 
+'''
+epsilon = 0.99
+epsilon_decay = 0.993
+'''
 
 
 

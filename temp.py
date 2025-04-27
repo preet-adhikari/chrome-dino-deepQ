@@ -5,6 +5,7 @@ import os
 import io
 import time
 import random
+import multiprocessing
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.chrome.service import Service
 from selenium import webdriver
@@ -50,7 +51,6 @@ def check_or_fail():
     print("✅ Chrome and Chromedriver found. Environment ready.")
 
 
-check_or_fail()
 # Since we are using the chrome and chromedriver for testing,
 # we have to set custom paths for selenium to find these.
 options = Options()
@@ -91,7 +91,7 @@ def send_keypress(action, driver):
     elif action == 2:
         #     # Duck
         actions.key_down(Keys.ARROW_DOWN).perform()
-        time.sleep(0.1)
+        time.sleep(0.2)
         actions.key_up(Keys.ARROW_DOWN).perform()
     else:  # Do nothing
         pass
@@ -124,7 +124,7 @@ def get_frame(driver):
 
 
 # Let's set the number of episodes first
-EPISODES = 300
+EPISODES = 1
 
 # Let's also add the steps so that the agent doesn't get stuck
 MAX_STEPS = 1000
@@ -133,7 +133,7 @@ MAX_STEPS = 1000
 epsilon = 0.99
 # EXPLORE = 5000
 # epsilon_decay = (epsilon - FINAL_EPSILON) / EXPLORE
-epsilon_decay = 0.993
+epsilon_decay = 0.995
 
 # Getting the batch size to train the network
 # Checking if the batch size is enough to decide
@@ -148,7 +148,7 @@ target_model = build_q_network()
 target_model.set_weights(model.get_weights())
 
 # Declare the optimizer
-optimizer = tf.keras.optimizers.Adam(learning_rate=0.001)
+optimizer = tf.keras.optimizers.Adam(learning_rate=1e-4)
 
 
 reward_history = []
@@ -199,6 +199,10 @@ for episode in range(EPISODES):
             print(q_values)
             # q_values = model.predict(state)
             action = np.argmax(q_values)
+            if step % 10 == 0:
+                print(
+                    f"[EP {episode+1}] Step {step} | Epsilon: {epsilon:.4f} | Q-values: {q_values[0]}"
+                )
 
         # Perform action using Selenium key events
         send_keypress(action, driver)
@@ -212,19 +216,19 @@ for episode in range(EPISODES):
         stacker.append(next_frame)
 
         # Award the agent with a reward if it survives
-        reward = 10
+        reward = 1
         # Check if game is over
         done = check_game_over(driver)
         # If game over, decrease reward
         if done:
-            reward -= 100
+            reward -= 20
 
         step += 1
         episode_reward += reward
 
         # Let's store the step in the replay buffer
         next_state = stacker.get_stacked_state()
-        replay_buffer.add(state, action, reward, next_state, done)
+        replay_buffer.add(state, action, episode_reward, next_state, done)
 
         # We take a sample of the batch size.
         if len(replay_buffer) >= 1000:
@@ -234,9 +238,9 @@ for episode in range(EPISODES):
             print(f"Loss: {loss}")
 
         print(f"Step: {step}, Reward: {reward}", end="\n")
-    if episode % 10 == 0:
+    if episode % 5 == 0:
         target_model.set_weights(model.get_weights())
-        # print("🔄 Updated target network.")
+        print("🔄 Updated target network.")
     print(f"🎯 Episode {episode+1} reward: {episode_reward}")
     reward_history.append(episode_reward)
     print(f"🎯 Total reward for episode {episode+1}: {episode_reward}")
@@ -245,7 +249,7 @@ for episode in range(EPISODES):
 
     epsilon *= epsilon_decay
     epsilon = max(0.1, epsilon)
-    # driver.quit()
+
     print(f"Episode ended after {step} steps.")
 
 
@@ -257,6 +261,31 @@ input("Press Enter to close the browser...")
 
 
 driver.quit()
+
+
+# Parallel processing
+class ChromeProcess(multiprocessing.Process):
+    def __init__(self, instance_id):
+        super(ChromeProcess, self).__init__()
+        self.instance_id = instance_id
+
+    def run(self):
+        time.sleep(1)
+        options = Options()
+
+        # options.add_argument("--headless")
+        options.add_argument("--mute-audio")
+        options.binary_location = chrome_path
+        # Adding argument to load the browser at a certain resolution
+        options.add_argument("--window-size=800,600")
+        service = Service(driver_path)
+        try:
+            driver.get("chrome://dino")
+        except WebDriverException as e:
+            if "net::ERR_INTERNET_DISCONNECTED" in str(e):
+                print("⚠️  Expected error: Dino game loaded offline.")
+            else:
+                raise
 
 
 def moving_avg(data, window=10):
@@ -289,7 +318,6 @@ test_episodes = 2  # or however many you want
 
 for test_ep in range(test_episodes):
     try:
-        driver = webdriver.Chrome(service=service, options=options)
         driver.get("chrome://dino")
     except WebDriverException as e:
         if "net::ERR_INTERNET_DISCONNECTED" in str(e):
@@ -297,7 +325,7 @@ for test_ep in range(test_episodes):
         else:
             raise
     time.sleep(1)
-    frame = get_frame(driver)
+    frame = get_frame()
     if frame is None:
         print("❌ Skipping test episode due to bad initial frame.")
         continue
@@ -313,7 +341,7 @@ for test_ep in range(test_episodes):
         action = np.argmax(q_values[0])  # Always exploit
         send_keypress(action, driver)
         time.sleep(0.1)
-        next_frame = get_frame(driver)
+        next_frame = get_frame()
         if next_frame is None:
             print("❌ Frame capture failed.")
             break
@@ -321,5 +349,22 @@ for test_ep in range(test_episodes):
         step += 1
         done = check_game_over(driver)
         print(f"[TEST] Step {step}, Action: {action}")
-    driver.quit()
+
     print(f"✅ Test episode {test_ep+1} ended after {step} steps.")
+
+
+# Run the script
+if __name__ == "__main__":
+    check_or_fail()
+    print("✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅")
+    num_instances = 4
+    # Creating a processes list to track every process
+    processes = []
+
+    for i in range(num_instances):
+        p = ChromeProcess(i)
+        p.start()
+        processes.append(p)
+
+    for p in processes:
+        p.join()
