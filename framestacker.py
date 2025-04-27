@@ -20,5 +20,5 @@ class FrameStacker:
 
     def get_stacked_state(self):
         # Stack frames along the last axis → shape: (75, 75, 3)
-        return np.stack(self.frames, axis=-1)
+        return np.dstack(self.frames)
         pass

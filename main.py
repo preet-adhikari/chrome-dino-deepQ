@@ -124,19 +124,16 @@ def get_frame(driver):
 
 
 # Let's set the number of episodes first
-EPISODES = 300
+EPISODES = 500
 
 # Let's also add the steps so that the agent doesn't get stuck
 MAX_STEPS = 1000
 
 
-epsilon = 0.99
-# EXPLORE = 5000
-# epsilon_decay = (epsilon - FINAL_EPSILON) / EXPLORE
-epsilon_decay = 0.993
+epsilon = 1.0
+epsilon_decay = 0.997  
+epsilon_min = 0.15 
 
-# Getting the batch size to train the network
-# Checking if the batch size is enough to decide
 BATCH_SIZE = 64
 
 # Initializing the replay buffer
@@ -152,7 +149,7 @@ optimizer = tf.keras.optimizers.Adam(learning_rate=0.001)
 
 
 reward_history = []
-
+previous_score = 0
 for episode in range(EPISODES):
     print(f"Starting episode: {episode + 1}: ")
     episode_reward = 0
@@ -165,7 +162,8 @@ for episode in range(EPISODES):
         else:
             raise
     time.sleep(1)
-
+    # Execute in 2x speed
+    # driver.execute_script("Runner.instance_.setSpeed(2)")
     # Let's take the first frame
     frame = get_frame(driver)
     stacker = FrameStacker()
@@ -205,19 +203,29 @@ for episode in range(EPISODES):
 
         #  Wait a bit, take next frame
         time.sleep(0.1)
+        # Get score
+        try:
+            current_score = int(driver.execute_script("return Runner.instance_.distanceMeter.digits.join('')"))
+            score_diff = current_score - previous_score
+
+            if score_diff > 0:
+                reward = score_diff * 0.1  
+            else:
+                reward = 0.1 
+
+            previous_score = current_score
+        except:
+            reward = 0.1  
+
+        done = check_game_over(driver)
+        # Game over penalty
+        if done:
+            reward = -10
         next_frame = get_frame(driver)
         if next_frame is None:
             print("❌ Skipping frame due to capture issue.")
             continue
         stacker.append(next_frame)
-
-        # Award the agent with a reward if it survives
-        reward = 10
-        # Check if game is over
-        done = check_game_over(driver)
-        # If game over, decrease reward
-        if done:
-            reward -= 100
 
         step += 1
         episode_reward += reward
@@ -234,7 +242,7 @@ for episode in range(EPISODES):
             print(f"Loss: {loss}")
 
         print(f"Step: {step}, Reward: {reward}", end="\n")
-    if episode % 10 == 0:
+    if step % 100 == 0:
         target_model.set_weights(model.get_weights())
         # print("🔄 Updated target network.")
     print(f"🎯 Episode {episode+1} reward: {episode_reward}")
@@ -244,7 +252,7 @@ for episode in range(EPISODES):
     # Decay epsilon
 
     epsilon *= epsilon_decay
-    epsilon = max(0.1, epsilon)
+    epsilon = max(epsilon_min, epsilon)
     # driver.quit()
     print(f"Episode ended after {step} steps.")
 

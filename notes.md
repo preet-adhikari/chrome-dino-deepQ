@@ -246,5 +246,9 @@ epsilon = 0.99
 epsilon_decay = 0.993
 '''
 
+The model is still not learning.
+
+
+
 
 
