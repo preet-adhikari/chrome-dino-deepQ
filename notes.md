@@ -61,7 +61,7 @@ Now the steps we can take is,
 
 6. Store this in "replay" memory
 7. Repeat until game is over
-8. Train your neural network
+8. Train the neural network
 
 These are the steps.
 
