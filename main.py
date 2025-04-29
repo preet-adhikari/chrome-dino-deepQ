@@ -47,7 +47,7 @@ def check_or_fail():
         print(f"❌ Chromedriver not found at: {driver_path}")
         sys.exit(1)
 
-    print("✅ Chrome and Chromedriver found. Environment ready.")
+    print("Chrome and Chromedriver found. Environment ready ✅.")
 
 
 check_or_fail()
@@ -65,7 +65,6 @@ service = Service(driver_path)
 
 
 # Setting up the environment
-
 # Making sure that the browser is centered
 root = tk.Tk()
 screen_width = root.winfo_screenwidth()
@@ -74,9 +73,7 @@ x = (screen_width - 800) // 2
 y = (screen_height - 600) // 2
 
 # We need to disable automation flags so that selenium can load chrome Dino.
-
 driver = webdriver.Chrome(service=service, options=options)
-
 # Set the window position of the browser
 driver.set_window_position(x, y)
 
@@ -89,7 +86,7 @@ def send_keypress(action, driver):
     if action == 1:
         body.send_keys(Keys.ARROW_UP)
     elif action == 2:
-        #     # Duck
+        # Duck
         actions.key_down(Keys.ARROW_DOWN).perform()
         time.sleep(0.1)
         actions.key_up(Keys.ARROW_DOWN).perform()
@@ -124,15 +121,15 @@ def get_frame(driver):
 
 
 # Let's set the number of episodes first
-EPISODES = 500
+EPISODES = 2000
 
 # Let's also add the steps so that the agent doesn't get stuck
 MAX_STEPS = 1000
 
 
 epsilon = 1.0
-epsilon_decay = 0.997  
-epsilon_min = 0.15 
+epsilon_decay = 0.998
+epsilon_min = 0.10
 
 BATCH_SIZE = 64
 
@@ -140,14 +137,17 @@ BATCH_SIZE = 64
 replay_buffer = ReplayBuffer(25000)
 
 # Initialize the model
-model = build_q_network()
-target_model = build_q_network()
+# model = build_q_network()
+# Trying the 84x84 version
+model = build_q_network(input_shape=(84, 84, 4))
+# target_model = build_q_network()
+target_model = build_q_network(input_shape=(84, 84, 4))
 target_model.set_weights(model.get_weights())
 
 # Declare the optimizer
 optimizer = tf.keras.optimizers.Adam(learning_rate=0.001)
 
-
+global_step = 0
 reward_history = []
 previous_score = 0
 for episode in range(EPISODES):
@@ -166,7 +166,9 @@ for episode in range(EPISODES):
     # driver.execute_script("Runner.instance_.setSpeed(2)")
     # Let's take the first frame
     frame = get_frame(driver)
-    stacker = FrameStacker()
+    # stacker = FrameStacker()
+    # For 84x84
+    stacker = FrameStacker(frame_shape=(84, 84))
     if frame is None:
         print("❌ Initial frame is None. Skipping episode.")
         continue
@@ -187,7 +189,6 @@ for episode in range(EPISODES):
         if np.random.rand() < epsilon:
             action = random.choice([0, 1, 2])  # Explore
         else:
-            print("PREDICTINGDASFADSFADSF")
             # Creating a new variable here so that state dimension
             # remains same for replay buffer
             state_input = np.expand_dims(state, axis=0)
@@ -202,32 +203,39 @@ for episode in range(EPISODES):
         send_keypress(action, driver)
 
         #  Wait a bit, take next frame
-        time.sleep(0.1)
+        # time.sleep(0.1)
+        # Changed time sleep here
+        time.sleep(0.04)
         # Get score
         try:
-            current_score = int(driver.execute_script("return Runner.instance_.distanceMeter.digits.join('')"))
+            current_score = int(
+                driver.execute_script(
+                    "return Runner.instance_.distanceMeter.digits.join('')"
+                )
+            )
             score_diff = current_score - previous_score
 
             if score_diff > 0:
-                reward = score_diff * 0.1  
+                reward = score_diff * 0.1
             else:
-                reward = 0.1 
+                reward = 0.1
 
             previous_score = current_score
         except:
-            reward = 0.1  
+            reward = 0.1
 
         done = check_game_over(driver)
         # Game over penalty
         if done:
-            reward = -10
+            reward = -5
         next_frame = get_frame(driver)
         if next_frame is None:
-            print("❌ Skipping frame due to capture issue.")
+            print("Skipping frame due to capture issue.")
             continue
         stacker.append(next_frame)
 
         step += 1
+        global_step += step
         episode_reward += reward
 
         # Let's store the step in the replay buffer
@@ -242,8 +250,8 @@ for episode in range(EPISODES):
             print(f"Loss: {loss}")
 
         print(f"Step: {step}, Reward: {reward}", end="\n")
-    if step % 100 == 0:
-        target_model.set_weights(model.get_weights())
+        if global_step % 100 == 0:
+            target_model.set_weights(model.get_weights())
         # print("🔄 Updated target network.")
     print(f"🎯 Episode {episode+1} reward: {episode_reward}")
     reward_history.append(episode_reward)
@@ -257,25 +265,44 @@ for episode in range(EPISODES):
     print(f"Episode ended after {step} steps.")
 
 
+def get_unique_filename(filename):
+    """
+    Returns a unique filename by appending _1, _2, etc. if needed.
+    """
+    if not os.path.exists(filename):
+        return filename  # File doesn't exist, use original
+
+    base, ext = os.path.splitext(filename)
+    counter = 1
+
+    new_filename = f"{base}_{counter}{ext}"
+    while os.path.exists(new_filename):
+        counter += 1
+        new_filename = f"{base}_{counter}{ext}"
+
+    return new_filename
+
+
 # Creating a models directory before saving
 os.makedirs("models", exist_ok=True)
-model.save("models/dino_q_network.keras")
+file_name = "models/dino_q_network.keras"
+unique_filename = get_unique_filename(file_name)
+print("Saving file as:", unique_filename)
+model.save(unique_filename)
 
 input("Press Enter to close the browser...")
 
 
 driver.quit()
 
-
 def moving_avg(data, window=10):
     return np.convolve(data, np.ones(window) / window, mode="valid")
 
 
-plt.figure(figsize=(10, 4))  # Start fresh BEFORE plotting
-
+# Plot episode results
+plt.figure(figsize=(10, 4))  
 # Plot raw episode rewards
 plt.plot(reward_history, label="Episode Reward")
-
 # Plot moving average
 if len(reward_history) >= 10:
     plt.plot(moving_avg(reward_history), label="Moving Avg (10)", linestyle="--")
@@ -288,10 +315,10 @@ plt.grid(True)
 plt.tight_layout()
 plt.show()
 
+input("Press Enter to begin training:")
+
 
 # Testing mode
-
-# After training is complete
 print("\n🧪 Testing trained model (no exploration)...\n")
 test_episodes = 2  # or however many you want
 

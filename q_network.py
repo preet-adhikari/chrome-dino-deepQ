@@ -3,7 +3,7 @@ from tensorflow.keras import layers, models
 import numpy as np
 import sys
 
-def build_q_network(input_shape=(75, 75, 3)):
+def build_q_network(input_shape=(75, 75, 4)):
     model = models.Sequential([
         tf.keras.Input(shape=input_shape),
         layers.Conv2D(32, (3, 3),

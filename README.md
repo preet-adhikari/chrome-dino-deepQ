@@ -3,7 +3,7 @@ This is a project where the AI learns how to play the chrome dino game using Dee
 
 ##### Issue while installing
 
-## 🛡 Gatekeeper on macOS
+## Gatekeeper on macOS
 
 I am running mac-arm64 for this project so both chrome and chromedriver are of the same version.
 
@@ -22,4 +22,21 @@ xattr -d -r com.apple.quarantine "./bin/chrome/chrome-mac-arm64/Google Chrome fo
 ```bash
 python3 -m venv dino-env
 source venv/bin/activate
+```
+
+## Running the code
+
+Run the for training using
+```bash
+python main.py
+```
+
+The model will be saved on models directory.
+
+## Running the demo after training
+
+You can use this command to run the demo
+
+```bash
+python demo.py
 ```

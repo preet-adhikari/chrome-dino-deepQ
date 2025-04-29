@@ -3,7 +3,7 @@ from collections import deque
 
 
 class FrameStacker:
-    def __init__(self, stack_size=3, frame_shape=(75, 75)):
+    def __init__(self, stack_size=4, frame_shape=(75, 75)):
         self.stack_size = stack_size
         self.frame_shape = frame_shape
         self.frames = deque(maxlen=stack_size)
