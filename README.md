@@ -1,7 +1,5 @@
 # chrome-dino-deepQ
 This is a project where the AI learns how to play the chrome dino game using Deep Q learning.
-<<<<<<< HEAD
-=======
 
 ##### Issue while installing
 
@@ -42,4 +40,5 @@ You can use this command to run the demo
 ```bash
 python demo.py
 ```
->>>>>>> origin/dev
+
+Note: This model still struggles with learning well and playing well. There are improvements that can be made here. One of the things that can be done is stacking more frames and using a more real time screenshot reader like chrome devtools or better frame processing than the one is there. This can be improved upon, so any suggestions are appreciated. 
