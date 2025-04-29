@@ -160,7 +160,7 @@ This time, we'll be setting a size of 75x75 since that seems better to work with
 
 This model needed tweaking: 
 
-''' 
+```
 def build_q_network(input_shape=(84, 84, 4), num_actions=2):
     model = models.Sequential([
         layers.Conv2D(32, kernel_size=8, strides=4,
@@ -177,10 +177,10 @@ def build_q_network(input_shape=(84, 84, 4), num_actions=2):
         layers.Dense(num_actions)  # no activation (raw Q-values)
     ])
     return model
-'''
+```
 
 We went with this one: 
-'''
+```
  model = models.Sequential([
         tf.keras.Input(shape=input_shape),
         layers.Conv2D(32, (3, 3),
@@ -199,15 +199,17 @@ We went with this one:
 
     # Compile and return model
     model.compile(optimizer='adam', loss="mse", metrics=["accuracy"])
-'''
+```
+
+This includes a more flexible model where the input shape can be changed if we want.
 
 We encountered an error while training the model. The size that was being generated from training added another dimension.
 Something like:
-'''
+```
 State 1 shape: (1, 75, 75, 3)
 State 2 shape: (1, 75, 75, 3)
 State 3 shape: (1, 75, 75, 3)
-'''
+```
 
 The issue could be in the replay buffer.
 
@@ -241,14 +243,22 @@ For now, back to the model. I have also have a hunch that using softmax as my ac
 Hence, I am removing softmax. 
 
 Training with 
-'''
+```
 epsilon = 0.99
 epsilon_decay = 0.993
-'''
+```
 
 The model is still not learning.
 
 Finally, the model seems to learn. After increasing the frame stack to 4 and changing the input to 84x84, the model seemed to learn. While it still can't get past the 164 score, which was its best with the three 2000 episodes tests I did, there are a lot of improvements to be made. One of them was the input lag on how it was taking the frames. While a little time sleep is necessary to catch the next frame, it still seems like there was lag in this input. And since the version of chrome dino is a little faster, maybe training this on a slower version would have been better. Also, the reward system. After shifting the death penalty to -5, it seemed to do better. Maybe decreasing this reward would help as well. One of the other issues was actually the crop mechanism wasn't working right. Seems like the canvas pixels and the screenshot pixels weren't matching at all and hence we had to divert to a hardcoded approach of cropping out the frames.
+
+Final training hyperparameters:
+```
+epsilon = 1.0
+epsilon_decay = 0.998
+epsilon_min = 0.10
+EPISODES = 2000
+```
 
 Finally, maybe selenium is not the best approach for this game. A more robust mechanism would have been much better, or maybe the model wasn't deep enough for it. Fine tuning hyperparameters for better performance is the way to go. The frame preprocessing too, I think that can also be looked at and improved upon. 
 
