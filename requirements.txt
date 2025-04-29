@@ -1,0 +1,7 @@
+selenium
+pyautogui
+Pillow
+numpy
+tensorflow
+matplotlib
+scikit-image

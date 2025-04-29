@@ -1,3 +1,6 @@
-__pycache__/
-bin/
-dino-env/
+/bin
+
+/dino-env
+
+*.zip
+/__pycache__
